@@ -18,29 +18,11 @@ def record_data():
         writer.writerows(zip(*all_data))
         
 cookies = {
-    'timezoneOffset': '10800,0',
-    '_ga': 'GA1.2.274522175.1679236447',
-    '_gid': 'GA1.2.641940250.1679236447',
-    'sessionid': '3b4f4133482d3bc79296552d',
-    'steamCountry': 'RU%7C4fb27fd3eacde98e3f3e69fa5268bc49',
-    'strResponsiveViewPrefs': 'touch',
+    "Your cookies",
 }
 
 headers = {
-    'Accept': 'text/javascript, text/html, application/xml, text/xml, */*',
-    'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
-    'Connection': 'keep-alive',
-    # 'Cookie': 'timezoneOffset=10800,0; _ga=GA1.2.274522175.1679236447; _gid=GA1.2.641940250.1679236447; sessionid=3b4f4133482d3bc79296552d; steamCountry=RU%7C4fb27fd3eacde98e3f3e69fa5268bc49; strResponsiveViewPrefs=touch',
-    'Referer': 'https://steamcommunity.com/market/search?category_730_ItemSet%5B%5D=any&category_730_ProPlayer%5B%5D=any&category_730_StickerCapsule%5B%5D=any&category_730_TournamentTeam%5B%5D=any&category_730_Weapon%5B%5D=any&category_730_Type%5B%5D=tag_CSGO_Type_Pistol&category_730_Type%5B%5D=tag_CSGO_Type_SMG&category_730_Type%5B%5D=tag_CSGO_Type_Rifle&category_730_Type%5B%5D=tag_CSGO_Type_Shotgun&category_730_Type%5B%5D=tag_CSGO_Type_SniperRifle&category_730_Type%5B%5D=tag_CSGO_Type_Machinegun&appid=730&q=',
-    'Sec-Fetch-Dest': 'empty',
-    'Sec-Fetch-Mode': 'cors',
-    'Sec-Fetch-Site': 'same-origin',
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36',
-    'X-Prototype-Version': '1.7',
-    'X-Requested-With': 'XMLHttpRequest',
-    'sec-ch-ua': '"Chromium";v="107", "Not=A?Brand";v="24"',
-    'sec-ch-ua-mobile': '?1',
-    'sec-ch-ua-platform': '"Android"',
+    "Your headers",
 }
 
 params = {
