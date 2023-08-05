@@ -1,121 +1,149 @@
-#steampars
-from bs4 import BeautifulSoup
-from random import randint
+#steam-pars 2.0
 
+import random
+import csv
 import time
 import re
-import requests
-import csv
 
-with open("steam_data.csv", "w+") as file:
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+
+options = webdriver.ChromeOptions()
+options.add_argument("--disable-blink-features=AutomationControlled")
+options.add_argument("user-agent=Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:84.0) Gecko/20100101 Firefox/84.0")
+s = Service(executable_path="/path/chromedriver")
+
+driver = webdriver.Chrome(service=s, options=options)
+
+all_data, all_buy_prices, all_buy_counts, all_sell_prices, all_sell_counts, all_profit, all_procent_profit, all_hrefs = [], 0, 0, 0, 0, [], [], []
+
+origin_names = ("Название", "Стоимость Покупки", "Стоимость Продажи", "Прибыль", "Процент", "ссылка")
+
+with open("steam_data.csv", "w+", newline='') as file:
     writer = csv.writer(file)
     writer.writerow(
-    ("Название", "Стоимость Покупки", "Стоимость Продажи", "Прибыль" , "Процент", "ссылка")
-    )
+        ("Название", "Стоимость Покупки", "кол-во", "Стоимость Продажи", "кол-во", "Прибыль", "Процент", "ссылка"))
+
+
 def record_data():
+    global all_data
+
     with open("steam_data.csv", "a") as file:
         writer = csv.writer(file)
-        writer.writerows(zip(*all_data))
-        
-cookies = {
-    "Your cookies",
-}
+        print(all_data)
+        writer.writerows(all_data)
 
-headers = {
-    "Your headers",
-}
 
-#Начальные переменные
-start = 2500
-count = 10
-total_count = start + count
-steam_procent = 0.13
-names, coasts, sales, profits, procents, hrefs, all_data = [ ], [ ], [ ], [ ], [ ], [ ], [ ]
+def buy():
+    global all_buy_prices, all_buy_counts
 
-while start < total_count: #Главное тело цикла
-    params = {
-        'query': '',
-        'start': str(start), #Место с какого кол-во предметов начинается поиск предметов
-        'count': str(count), # Кол-во предметов на странице
-        'search_descriptions': '0',
-        'sort_column': 'price',
-        'sort_dir': 'asc',
-        'appid': '730',
-        'category_730_ItemSet[]': 'any',
-        'category_730_ProPlayer[]': 'any',
-        'category_730_StickerCapsule[]': 'any',
-        'category_730_TournamentTeam[]': 'any',
-        'category_730_Weapon[]': 'any',
-        'category_730_Quality[]': 'tag_normal',
-        'category_730_Type[]': [
-            'tag_CSGO_Type_Pistol',
-            'tag_CSGO_Type_SMG',
-            'tag_CSGO_Type_Rifle',
-            'tag_CSGO_Type_Shotgun',
-            'tag_CSGO_Type_SniperRifle',
-            'tag_CSGO_Type_Machinegun',
-        ],
-    }
-    
-    response = requests.get('https://steamcommunity.com/market/search/render/', params=params, cookies=cookies, headers=headers) #Запрос главной ТП steam
-        
-    json=response.json()
-    
-    total_count=json["total_count"] #Общее число предметов
-    json_soup = BeautifulSoup(json["results_html"], "lxml")
+    buy_items = driver.find_element(By.ID, "market_commodity_forsale_table")
+    buy_price = buy_items.find_elements(By.CSS_SELECTOR, "tr > td")  # .get_attribute('innerHTML')
 
-    data = json_soup.find_all("a", {"class":"market_listing_row_link"})
-    
-    for i in data: #Поиск каждого элемента
-        
-        name=i.find("div", {"class":"market_listing_row"}).get("data-hash-name")
-        names.append(name)
-        
-        href = i.get("href")
-        hrefs.append(href)
-    
-        response_item = requests.get(href, headers=headers, cookies=cookies) #Запрос на страницу кокретного премдета
-        try:
-            item_nameid = re.findall(r'Market_LoadOrderSpread\(\s*(\d+)\s*\)', str(response_item.content))[0] #Находит айди предмета
-            print(item_nameid)
-            
-            params_item = {
-            'item_nameid': str(item_nameid),
-            'language': 'russian',
-            'currency': '1',    
-            }
-        
-            item_response = requests.get('https://steamcommunity.com/market/itemordershistogram', params=params_item, headers = headers) #Запрос xhr файла
-            
-            """if item_response.status_code != 200:
-                all_data.extend((names, sales, coasts, profits, procents, hrefs))
-                print(all_data)
-                record_data()"""        
-            
-            item_json = item_response.json()
-            
-            highest_buy_order = (int(item_json["highest_buy_order"])/100)
-            sales.append("$"+str(highest_buy_order))
-                    
-            lowest_sell_order = (int(item_json["lowest_sell_order"])/100)
-            coasts.append("$"+str(lowest_sell_order))
-            
-            profit = "$"+str(round(((lowest_sell_order - (lowest_sell_order*steam_procent))-highest_buy_order), 4)) #Расчет предполагаемой прибыли
-            profits.append(profit)
-                    
-            procent = str(round(((lowest_sell_order - (lowest_sell_order*steam_procent))/highest_buy_order-1)*100, 4))+"%" #Расчет процента прибыли
-            procents.append(procent)
-            
-        except Exception:
-            print("Error" , item_response.status_code)
-        
-        #print(name, highest_buy_order, lowest_sell_order, profit, procent, href)
-        
-        time.sleep(366) #Время задержки следующего запроса
-        
-    all_data.extend((names, sales, coasts, profits, procents, hrefs))
-    print("Successful!",all_data)
-    
-    start+=count
-    
-    record_data()
+    buy_prices = []
+    buy_counts = 0
+
+    print("buy")
+    for k in range(len(buy_price)):
+        if k % 2 == 0:
+            buy_prices += re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', buy_price[k].text)
+
+            print(k, "Цена " + " ".join(
+                re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', buy_price[k].text)))  # get_attribute('innerHTML'))
+        else:
+            buy_counts += int(" ".join(
+                re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', buy_price[k].text)))
+
+            print(k, "Кол-во " + " ".join(
+                re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', buy_price[k].text)))  # get_attribute('innerHTML'))
+
+    if len(buy_prices) > 1:
+        all_buy_prices = buy_prices[1]
+    else:
+        all_buy_prices = buy_prices[0]
+
+    all_buy_counts = buy_counts
+
+    time.sleep(random.randint(1, 3))
+
+
+def sell():
+    global all_sell_prices, all_sell_counts
+
+    sell_items = driver.find_element(By.ID, "market_commodity_buyreqeusts_table")
+    sell_price = sell_items.find_elements(By.CSS_SELECTOR, "tr > td")
+    print("sell")
+
+    sell_prices = []
+    sell_counts = 0
+
+    for k in range(len(sell_price)):
+        if k % 2 == 0:
+            sell_prices += re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', sell_price[k].text)
+
+            print(k, "Цена " + " ".join(
+                re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', sell_price[k].text)))  # get_attribute('innerHTML'))
+        else:
+            sell_counts += int(" ".join(
+                re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', sell_price[k].text)))
+
+            print(k, "Кол-во " + " ".join(
+                re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', sell_price[k].text)))  # get_attribute('innerHTML'))
+
+    all_sell_prices = sell_prices[0]
+
+    all_sell_counts = sell_counts
+
+    time.sleep(random.randint(1, 3))
+
+
+try:
+
+    driver.get("https://steamcommunity.com/market/search?q=#p1")
+
+    shop_list = driver.find_element(By.ID, "searchResultsRows")
+    all_positions = shop_list.find_elements(By.CLASS_NAME, "market_listing_row_link")
+    all_positions_href = [href.get_attribute('href') for href in all_positions]
+
+    time.sleep(3)
+    for i in range(len(all_positions_href)):
+        time.sleep(random.randint(3, 6))
+        driver.get(all_positions_href[i])
+
+        all_hrefs.append(all_positions_href[i])
+
+        item_name = driver.find_element(By.CLASS_NAME, "hover_item_name").text
+
+
+        print(item_name)
+
+        time.sleep(5)  # важно не убирать
+
+        while True:
+            try:
+
+                buy()
+
+                sell()
+
+                break
+            except Exception as ex:
+                print(ex)
+
+
+        all_data.append([item_name, all_buy_prices, all_buy_counts, all_sell_prices, all_sell_counts, all_profit,
+                     all_procent_profit, all_positions_href[i]])
+
+
+
+    # print(all_positions_href, "/h", buy_price)
+
+except Exception as ex:
+    driver.back()
+    pass  # print(ex)
+finally:
+    driver.close()
+    driver.quit()
+
+record_data()
