@@ -1,7 +1,7 @@
-#steam-pars 2.0
+#steam-pars 2.1
 
 import random
-import csv
+import sqlite3
 import time
 import re
 
@@ -16,27 +16,25 @@ s = Service(executable_path="/path/chromedriver")
 
 driver = webdriver.Chrome(service=s, options=options)
 
-all_data, all_buy_prices, all_buy_counts, all_sell_prices, all_sell_counts, all_profit, all_procent_profit, all_hrefs = [], 0, 0, 0, 0, [], [], []
+item_href = None
 
-origin_names = ("Название", "Стоимость Покупки", "Стоимость Продажи", "Прибыль", "Процент", "ссылка")
+# База данных
 
-with open("steam_data.csv", "w+", newline='') as file:
-    writer = csv.writer(file)
-    writer.writerow(
-        ("Название", "Стоимость Покупки", "кол-во", "Стоимость Продажи", "кол-во", "Прибыль", "Процент", "ссылка"))
+db = sqlite3.connect('steam-pars.db')
+cursor = db.cursor()
 
+cursor.execute("""CREATE TABLE IF NOT EXISTS steam_items (
+    item_name text,
+    coast_buy REAL,
+    count_buy integer,
+    coast_sell REAL,
+    count_sell integer,
+    item_link text
+)""")
 
-def record_data():
-    global all_data
-
-    with open("steam_data.csv", "a") as file:
-        writer = csv.writer(file)
-        print(all_data)
-        writer.writerows(all_data)
-
+###
 
 def buy():
-    global all_buy_prices, all_buy_counts
 
     buy_items = driver.find_element(By.ID, "market_commodity_forsale_table")
     buy_price = buy_items.find_elements(By.CSS_SELECTOR, "tr > td")  # .get_attribute('innerHTML')
@@ -59,17 +57,21 @@ def buy():
                 re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', buy_price[k].text)))  # get_attribute('innerHTML'))
 
     if len(buy_prices) > 1:
-        all_buy_prices = buy_prices[1]
+        buy_price_one = buy_prices[1]
     else:
-        all_buy_prices = buy_prices[0]
+        buy_price_one = buy_prices[0]
 
-    all_buy_counts = buy_counts
+    ###
+
+    cursor.execute("UPDATE steam_items SET coast_buy = ?, count_buy = ?  WHERE item_link = ?", (buy_price_one, buy_counts, item_href))
+    db.commit()
+
+    ###
 
     time.sleep(random.randint(1, 3))
 
 
 def sell():
-    global all_sell_prices, all_sell_counts
 
     sell_items = driver.find_element(By.ID, "market_commodity_buyreqeusts_table")
     sell_price = sell_items.find_elements(By.CSS_SELECTOR, "tr > td")
@@ -91,9 +93,14 @@ def sell():
             print(k, "Кол-во " + " ".join(
                 re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', sell_price[k].text)))  # get_attribute('innerHTML'))
 
-    all_sell_prices = sell_prices[0]
+    sell_price_one = sell_prices[0]
 
-    all_sell_counts = sell_counts
+    ###
+
+    cursor.execute("UPDATE steam_items SET coast_sell = ?, count_sell = ?  WHERE item_link = ?", (sell_price_one, sell_counts, item_href))
+    db.commit()
+    
+    ###
 
     time.sleep(random.randint(1, 3))
 
@@ -111,12 +118,15 @@ try:
         time.sleep(random.randint(3, 6))
         driver.get(all_positions_href[i])
 
-        all_hrefs.append(all_positions_href[i])
+        item_href = all_positions_href[i]
 
         item_name = driver.find_element(By.CLASS_NAME, "hover_item_name").text
 
-
         print(item_name)
+        if cursor.execute("SELECT item_link FROM steam_items WHERE item_link = ?", (item_href, )) == False:
+            cursor.execute("INSERT INTO steam_items (item_name, item_link) VALUES (?, ?)", (item_name, item_href))
+        else:
+            print('Такой предмет есть')
 
         time.sleep(5)  # важно не убирать
 
@@ -131,12 +141,6 @@ try:
             except Exception as ex:
                 print(ex)
 
-
-        all_data.append([item_name, all_buy_prices, all_buy_counts, all_sell_prices, all_sell_counts, all_profit,
-                     all_procent_profit, all_positions_href[i]])
-
-
-
     # print(all_positions_href, "/h", buy_price)
 
 except Exception as ex:
@@ -145,5 +149,4 @@ except Exception as ex:
 finally:
     driver.close()
     driver.quit()
-
-record_data()
+    db.close()
