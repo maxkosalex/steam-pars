@@ -1,4 +1,4 @@
-#steam-pars 2.1
+#steam-pars 2.2
 
 import random
 import sqlite3
@@ -34,119 +34,127 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS steam_items (
 
 ###
 
+n = 1
+all_pages = 2
+
 def buy():
-
-    buy_items = driver.find_element(By.ID, "market_commodity_forsale_table")
-    buy_price = buy_items.find_elements(By.CSS_SELECTOR, "tr > td")  # .get_attribute('innerHTML')
-
-    buy_prices = []
-    buy_counts = 0
-
-    print("buy")
-    for k in range(len(buy_price)):
-        if k % 2 == 0:
-            buy_prices += re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', buy_price[k].text)
-
-            print(k, "Цена " + " ".join(
-                re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', buy_price[k].text)))  # get_attribute('innerHTML'))
+    try:
+        buy_items = driver.find_element(By.ID, "market_commodity_forsale_table")
+        buy_price = buy_items.find_elements(By.CSS_SELECTOR, "tr > td")  # .get_attribute('innerHTML')
+    
+        buy_prices = []
+        buy_counts = 0
+    
+        print("buy")
+        for k in range(len(buy_price)):
+            if k % 2 == 0:
+                buy_prices += re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', buy_price[k].text)
+    
+                print(k, "Цена " + " ".join(
+                    re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', buy_price[k].text)))  # get_attribute('innerHTML'))
+            else:
+                buy_counts += int(" ".join(
+                    re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', buy_price[k].text)))
+    
+                print(k, "Кол-во " + " ".join(
+                    re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', buy_price[k].text)))  # get_attribute('innerHTML'))
+    
+        if len(buy_prices) > 1:
+            buy_price_one = buy_prices[1]
         else:
-            buy_counts += int(" ".join(
-                re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', buy_price[k].text)))
-
-            print(k, "Кол-во " + " ".join(
-                re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', buy_price[k].text)))  # get_attribute('innerHTML'))
-
-    if len(buy_prices) > 1:
-        buy_price_one = buy_prices[1]
-    else:
-        buy_price_one = buy_prices[0]
-
-    ###
-
-    cursor.execute("UPDATE steam_items SET coast_buy = ?, count_buy = ?  WHERE item_link = ?", (buy_price_one, buy_counts, item_href))
-    db.commit()
-
-    ###
-
-    time.sleep(random.randint(1, 3))
+            buy_price_one = buy_prices[0]
+    
+        ###
+    
+        cursor.execute("UPDATE steam_items SET coast_buy = ?, count_buy = ?  WHERE item_link = ?", (buy_price_one, buy_counts, item_href))
+        db.commit()
+    
+        ###
+    
+        time.sleep(random.randint(1, 3))
+        
+    except Exception as ex:
+        print(ex):
 
 
 def sell():
-
-    sell_items = driver.find_element(By.ID, "market_commodity_buyreqeusts_table")
-    sell_price = sell_items.find_elements(By.CSS_SELECTOR, "tr > td")
-    print("sell")
-
-    sell_prices = []
-    sell_counts = 0
-
-    for k in range(len(sell_price)):
-        if k % 2 == 0:
-            sell_prices += re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', sell_price[k].text)
-
-            print(k, "Цена " + " ".join(
-                re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', sell_price[k].text)))  # get_attribute('innerHTML'))
-        else:
-            sell_counts += int(" ".join(
-                re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', sell_price[k].text)))
-
-            print(k, "Кол-во " + " ".join(
-                re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', sell_price[k].text)))  # get_attribute('innerHTML'))
-
-    sell_price_one = sell_prices[0]
-
-    ###
-
-    cursor.execute("UPDATE steam_items SET coast_sell = ?, count_sell = ?  WHERE item_link = ?", (sell_price_one, sell_counts, item_href))
-    db.commit()
+    try:
+        sell_items = driver.find_element(By.ID, "market_commodity_buyreqeusts_table")
+        sell_price = sell_items.find_elements(By.CSS_SELECTOR, "tr > td")
+        print("sell")
     
-    ###
+        sell_prices = []
+        sell_counts = 0
+    
+        for k in range(len(sell_price)):
+            if k % 2 == 0:
+                sell_prices += re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', sell_price[k].text)
+    
+                print(k, "Цена " + " ".join(
+                    re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', sell_price[k].text)))  # get_attribute('innerHTML'))
+            else:
+                sell_counts += int(" ".join(
+                    re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', sell_price[k].text)))
+    
+                print(k, "Кол-во " + " ".join(
+                    re.findall(r'[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+', sell_price[k].text)))  # get_attribute('innerHTML'))
+    
+        sell_price_one = sell_prices[0]
+    
+        ###
+    
+        cursor.execute("UPDATE steam_items SET coast_sell = ?, count_sell = ?  WHERE item_link = ?", (sell_price_one, sell_counts, item_href))
+        db.commit()
+        
+        ###
+    
+        time.sleep(random.randint(1, 3))
+        
+    except Exception as ex:
+        print(ex):
 
-    time.sleep(random.randint(1, 3))
 
+while n < all_pages:
+    try:
+    
+        driver.get("https://steamcommunity.com/market/search?q=#p1")
 
-try:
+        time.sleep(1)
+        all_pages = int(driver.find_elements(By.CLASS_NAME, "market_paging_pagelink")[-1].text)
+    
+        shop_list = driver.find_element(By.ID, "searchResultsRows")
+        all_positions = shop_list.find_elements(By.CLASS_NAME, "market_listing_row_link")
+        all_positions_href = [href.get_attribute('href') for href in all_positions]
+    
+        time.sleep(3)
+        for i in range(len(all_positions_href)):
+            time.sleep(random.randint(3, 6))
+            driver.get(all_positions_href[i])
+    
+            item_href = all_positions_href[i]
+    
+            item_name = driver.find_element(By.CLASS_NAME, "hover_item_name").text
+    
+            cursor.execute("SELECT item_link FROM steam_items WHERE item_link = ?", (item_href,))
 
-    driver.get("https://steamcommunity.com/market/search?q=#p1")
+            print(n, item_name, item_href)
 
-    shop_list = driver.find_element(By.ID, "searchResultsRows")
-    all_positions = shop_list.find_elements(By.CLASS_NAME, "market_listing_row_link")
-    all_positions_href = [href.get_attribute('href') for href in all_positions]
+            if cursor.fetchone() is None:
+                cursor.execute("INSERT INTO steam_items (item_name, item_link) VALUES (?, ?)", (item_name, item_href))
+            else:
+                print('Такой предмет есть')
+    
+            time.sleep(5)  # важно не убирать
 
-    time.sleep(3)
-    for i in range(len(all_positions_href)):
-        time.sleep(random.randint(3, 6))
-        driver.get(all_positions_href[i])
+            buy()
+            sell()
+    n += 1
+    
+        # print(all_positions_href, "/h", buy_price)
+    
+    except Exception as ex:
+        print(ex)
 
-        item_href = all_positions_href[i]
-
-        item_name = driver.find_element(By.CLASS_NAME, "hover_item_name").text
-
-        print(item_name)
-        if cursor.execute("SELECT item_link FROM steam_items WHERE item_link = ?", (item_href, )) == False:
-            cursor.execute("INSERT INTO steam_items (item_name, item_link) VALUES (?, ?)", (item_name, item_href))
-        else:
-            print('Такой предмет есть')
-
-        time.sleep(5)  # важно не убирать
-
-        while True:
-            try:
-
-                buy()
-
-                sell()
-
-                break
-            except Exception as ex:
-                print(ex)
-
-    # print(all_positions_href, "/h", buy_price)
-
-except Exception as ex:
-    driver.back()
-    pass  # print(ex)
-finally:
-    driver.close()
-    driver.quit()
-    db.close()
+driver.close()
+driver.quit()
+db.close()
